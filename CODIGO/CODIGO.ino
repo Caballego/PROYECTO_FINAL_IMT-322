@@ -30,12 +30,7 @@ estados soldadora = ESPERA;
 
 void setup()
 {
-  lcd.init();
-  lcd.backlight();
-  lcd.setCursor(5,1);
-  lcd.print("Bienvenido");
-  delay(1500);
-  lcd.clear();
+  Serial.begin(9600);
   pinMode(LED_PILOTO, OUTPUT);
   digitalWrite(LED_PILOTO, LOW);
   pinMode(RELE_PLANCHA, OUTPUT);
@@ -44,7 +39,12 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(BOTON_INICIO), iniciar_calentado, FALLING);
   pinMode(BOTON_STOP, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(BOTON_STOP), parada_emergencia, FALLING);
-  Serial.begin(9600);
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(5,1);
+  lcd.print("Bienvenido");
+  delay(1500);
+  lcd.clear();
   /*pinMode(outputPin, OUTPUT);
   pid.begin();
   pid.setpoint(setpoint);
@@ -169,9 +169,9 @@ void iniciar_calentado()
     {
       soldadora = CALENTANDO;
       digitalWrite(RELE_PLANCHA, HIGH);
-      //lcd.clear();
       estado_espera=false;
-    }  
+    }
+    tiempo = millis();
   }
 }
 
@@ -179,8 +179,8 @@ void parada_emergencia()
 {
   if (millis()-tiempo > tiempo_limite)
   {
-    //lcd.clear();
     soldadora = STOP;
     digitalWrite(RELE_PLANCHA, LOW);
+    tiempo = millis();
   }
 }
