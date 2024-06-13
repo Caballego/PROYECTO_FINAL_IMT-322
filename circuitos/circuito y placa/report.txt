@@ -1,0 +1,19 @@
+Info: Procesando el símbolo 'D1:'.
+Info: Procesando el símbolo 'I1:'.
+Info: Procesando el símbolo 'J2:'.
+Info: Procesando el símbolo 'J4:'.
+Info: Procesando el símbolo 'J5:'.
+Info: Procesando el símbolo 'J6:'.
+Info: Procesando el símbolo 'J7:'.
+Info: Procesando el símbolo 'J8:'.
+Error: No puede añadirse D1 (no se ha asignado huella).
+Error: No puede añadirse I1 (no se ha asignado huella).
+Error: No puede añadirse J2 (no se ha asignado huella).
+Error: No puede añadirse J4 (no se ha asignado huella).
+Error: No puede añadirse J5 (no se ha asignado huella).
+Error: No puede añadirse J6 (no se ha asignado huella).
+Error: No puede añadirse J7 (no se ha asignado huella).
+Error: No puede añadirse J8 (no se ha asignado huella).
+
+
+Info: Número de avisos: 0, errores: 8.
