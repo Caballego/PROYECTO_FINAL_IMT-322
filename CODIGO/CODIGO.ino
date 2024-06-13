@@ -17,6 +17,10 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 const int tiempo_limite = 40;
 long tiempo = 0;
 bool estado_espera = true;
+bool estado_stop = false;
+bool borrar_pantalla = false;
+int i=0;
+float temperatura = 0;
 typedef enum{
   ESPERA,
   CALENTANDO,
@@ -24,6 +28,16 @@ typedef enum{
   STOP
 }estados;
 estados soldadora = ESPERA;
+byte customChar[] = {
+  B01110,
+  B10001,
+  B10001,
+  B10001,
+  B01110,
+  B00000,
+  B00000,
+  B00000
+};
 //const int outputPin   = 10;
 //bool funcionamiento = true;
 //int setpoint=260;
@@ -40,6 +54,7 @@ void setup()
   pinMode(BOTON_STOP, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(BOTON_STOP), parada_emergencia, FALLING);
   lcd.init();
+  lcd.createChar(0, customChar);
   lcd.backlight();
   lcd.setCursor(5,1);
   lcd.print("Bienvenido");
@@ -54,52 +69,61 @@ void setup()
 
 void loop()
 {
-  Serial.println(soldadora);
   switch (soldadora)
   {
     case ESPERA:
-    Serial.println("espera");
-    lcd.setCursor(4,1);
-    lcd.print("PULSE EL BOTON");
-    lcd.setCursor(5,2);
-    lcd.print("PARA INICIAR");
-    Serial.println("espera");
+    estado_espera = true;
+    mostrar_mensaje_2();
     delay(300);
     break;
     case CALENTANDO:
-    Serial.println(soldadora);
-    float temperatura = leer_termopar();
-    lcd.setCursor(5, 1);
-    lcd.print("CALENTANDO");
-    lcd.setCursor(7, 2);
-    lcd.print(temperatura, 2);
-    if (temperatura>29)
+    temperatura = leer_termopar();
+    mostrar_mensaje();
+    /*if (temperatura>30)
     {
       soldadora=ENFRIANDO;
+    }*/
+    if (i==3)
+    {
+      soldadora = ENFRIANDO;
+      borrar_pantalla=true;
     }
+    i++;
     delay(300);
     break;
     case ENFRIANDO:
-    Serial.println(soldadora);
-    digitalWrite(RELE_PLANCHA, LOW);
     temperatura = leer_termopar();
-    lcd.setCursor(5, 1);
-    lcd.print("ENFRIANDO");
-    lcd.setCursor(7, 2);
-    lcd.print(temperatura, 2);
-    if (temperatura<20)
+    if (i<=6)
     {
+      digitalWrite(RELE_PLANCHA, LOW);
+      mostrar_mensaje();
+      if (i==6)
+      {
+        borrar_pantalla=true;
+      }
+    }
+    else
+    {
+      mostrar_mensaje_2();
       digitalWrite(LED_PILOTO, HIGH);
-      lcd.setCursor(2, 1);
-      lcd.print("RETIRAR LA PLACA");
-      lcd.setCursor(7, 2);
-      lcd.print(temperatura, 2);
+    }
+    i++;
+    if (i==15)
+    {
+      soldadora = ESPERA;
+      digitalWrite(LED_PILOTO, LOW);
+      borrar_pantalla=true;
+      i=0;
     }
     delay(300);
     break;
     case STOP:
-    Serial.println(soldadora);
-    Serial.println("kjd");
+    estado_espera=false;
+    if (borrar_pantalla)
+    {
+      lcd.clear();
+      borrar_pantalla=false;
+    }
     lcd.setCursor(1, 1);
     lcd.print("PROGRAMA  DETENIDO");
     lcd.setCursor(0, 2);
@@ -107,23 +131,6 @@ void loop()
     delay(300);
     break;
   }
-  /*float temperatura = leer_termopar();
-  lcd.setCursor(2, 1);
-  lcd.print("Termopar tipo K");
-  lcd.setCursor(7, 2);
-  lcd.print(temperatura, 2);
-  delay(300);*/
-  /*int output = pid.compute(temperatura);
-  analogWrite(outputPin, output);
-  if (funcionamiento)
-  {
-    if (temperatura=setpoint)
-    {
-      delay(10000);
-      setpoint=0;
-      funcionamiento = false;
-    }
-  }*/
 }
 
 double leer_termopar()
@@ -170,6 +177,7 @@ void iniciar_calentado()
       soldadora = CALENTANDO;
       digitalWrite(RELE_PLANCHA, HIGH);
       estado_espera=false;
+      borrar_pantalla=true;
     }
     tiempo = millis();
   }
@@ -177,10 +185,66 @@ void iniciar_calentado()
 
 void parada_emergencia()
 {
-  if (millis()-tiempo > tiempo_limite)
+  if (estado_stop == false)
   {
-    soldadora = STOP;
-    digitalWrite(RELE_PLANCHA, LOW);
+    if (millis()-tiempo > tiempo_limite)
+    {
+      soldadora = STOP;
+      digitalWrite(RELE_PLANCHA, LOW);
+      borrar_pantalla=true;
+      estado_stop=true;
+    }
     tiempo = millis();
   }
+}
+
+void mostrar_mensaje()
+{
+  if (borrar_pantalla)
+  {
+    lcd.clear();
+    borrar_pantalla = false;
+  }
+  lcd.setCursor(5, 1);
+  if (soldadora == CALENTANDO)
+  {
+    lcd.print("CALENTANDO");
+  }
+  else if (soldadora==ENFRIANDO)
+  {
+    lcd.print("ENFRIANDO!");
+  }
+  mostrar_temperatura();
+}
+
+void mostrar_mensaje_2()
+{
+  if (borrar_pantalla)
+  {
+    lcd.clear();
+    borrar_pantalla=false;
+  }
+  if (soldadora == ESPERA)
+  {
+    lcd.setCursor(3,1);
+    lcd.print("PULSE EL BOTON");
+    lcd.setCursor(4,2);
+    lcd.print("PARA INICIAR");
+  }
+  else if (soldadora == ENFRIANDO)
+  {
+    lcd.setCursor(2, 1);
+    lcd.print("RETIRAR LA PLACA");
+    mostrar_temperatura();
+  }
+}
+
+void mostrar_temperatura()
+{
+  lcd.setCursor(6, 2);
+  lcd.print(temperatura, 2);
+  lcd.setCursor(12, 2);
+  lcd.write(0);
+  lcd.setCursor(13, 2);
+  lcd.print("C");
 }
