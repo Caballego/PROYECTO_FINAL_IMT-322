@@ -1,15 +1,15 @@
 #include <Wire.h>
-//#include <PIDController.h>
+#include <PIDController.h>
 #include <LiquidCrystal_I2C.h>      
 LiquidCrystal_I2C lcd(0x27, 20, 4); 
 
 #include <SPI.h>
 
-//PIDController pid;
+PIDController pid;
 
-#define MAX6675_SO 5
+#define MAX6675_SO 7
 #define MAX6675_CS 6
-#define MAX6675_SCK 7
+#define MAX6675_SCK 5
 #define LED_PILOTO 8
 #define RELE_PLANCHA 9
 #define BOTON_INICIO 2
@@ -19,8 +19,15 @@ long tiempo = 0;
 bool estado_espera = true;
 bool estado_stop = false;
 bool borrar_pantalla = false;
+long tiempo_inicio = 0;
+long tiempo_actual = 0;
+bool actualizar_tiempo = true;
 int i=0;
 float temperatura = 0;
+int outputPin   = 12;
+int sensorPin   = A7;
+int sensorValue = 0;
+int output = 0;
 typedef enum{
   ESPERA,
   CALENTANDO,
@@ -38,9 +45,8 @@ byte customChar[] = {
   B00000,
   B00000
 };
-//const int outputPin   = 10;
-//bool funcionamiento = true;
-//int setpoint=260;
+bool funcionamiento = true;
+int setpoint=200;
 
 void setup()
 {
@@ -60,11 +66,11 @@ void setup()
   lcd.print("Bienvenido");
   delay(1500);
   lcd.clear();
-  /*pinMode(outputPin, OUTPUT);
+  pinMode(outputPin, OUTPUT);
   pid.begin();
   pid.setpoint(setpoint);
-  pid.tune(1, 1, 1);
-  pid.limit(0, 255);*/
+  pid.tune(0.4, 0.6, 0.1);
+  pid.limit(0, 255);
 }
 
 void loop()
@@ -77,43 +83,40 @@ void loop()
     delay(300);
     break;
     case CALENTANDO:
+    establecer_tiempo();
+    tiempo_actual=millis();
     temperatura = leer_termopar();
     mostrar_mensaje();
-    /*if (temperatura>30)
+    sensorValue = analogRead(sensorPin);
+    output = pid.compute(sensorValue);
+    analogWrite(outputPin, output);
+    if (tiempo_actual-tiempo_inicio>10000)
     {
       soldadora=ENFRIANDO;
-    }*/
-    if (i==3)
-    {
-      soldadora = ENFRIANDO;
-      borrar_pantalla=true;
+      tiempo_inicio = true;
     }
-    i++;
     delay(300);
     break;
     case ENFRIANDO:
+    establecer_tiempo();
+    tiempo_actual=millis();
     temperatura = leer_termopar();
-    if (i<=6)
+    if (tiempo_actual-tiempo_inicio<10000)
     {
       digitalWrite(RELE_PLANCHA, LOW);
       mostrar_mensaje();
-      if (i==6)
-      {
-        borrar_pantalla=true;
-      }
     }
-    else
+    else if (tiempo_actual-tiempo_inicio<15000)
     {
       mostrar_mensaje_2();
       digitalWrite(LED_PILOTO, HIGH);
     }
-    i++;
-    if (i==15)
+    if (tiempo_actual-tiempo_inicio>15000)
     {
       soldadora = ESPERA;
       digitalWrite(LED_PILOTO, LOW);
       borrar_pantalla=true;
-      i=0;
+      actualizar_tiempo=true;
     }
     delay(300);
     break;
@@ -247,4 +250,13 @@ void mostrar_temperatura()
   lcd.write(0);
   lcd.setCursor(13, 2);
   lcd.print("C");
+}
+
+void establecer_tiempo()
+{
+  if (actualizar_tiempo)
+  {
+    tiempo_inicio = millis();
+    actualizar_tiempo = false;
+  }
 }
