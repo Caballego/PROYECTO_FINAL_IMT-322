@@ -50,7 +50,6 @@ int setpoint=200;
 
 void setup()
 {
-  Serial.begin(9600);
   pinMode(LED_PILOTO, OUTPUT);
   digitalWrite(LED_PILOTO, LOW);
   pinMode(RELE_PLANCHA, OUTPUT);
@@ -93,7 +92,7 @@ void loop()
     if (tiempo_actual-tiempo_inicio>10000)
     {
       soldadora=ENFRIANDO;
-      tiempo_inicio = true;
+      actualizar_tiempo = true;
     }
     delay(300);
     break;
@@ -101,17 +100,18 @@ void loop()
     establecer_tiempo();
     tiempo_actual=millis();
     temperatura = leer_termopar();
-    if (tiempo_actual-tiempo_inicio<10000)
+    if (tiempo_actual-tiempo_inicio<5000)
     {
       digitalWrite(RELE_PLANCHA, LOW);
       mostrar_mensaje();
+      Serial.println("djkfd");
     }
-    else if (tiempo_actual-tiempo_inicio<15000)
+    else if (tiempo_actual-tiempo_inicio<10000)
     {
       mostrar_mensaje_2();
       digitalWrite(LED_PILOTO, HIGH);
     }
-    if (tiempo_actual-tiempo_inicio>15000)
+    if (tiempo_actual-tiempo_inicio>10000)
     {
       soldadora = ESPERA;
       digitalWrite(LED_PILOTO, LOW);
