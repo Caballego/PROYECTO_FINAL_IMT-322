@@ -62,14 +62,22 @@ void setup()
   lcd.createChar(0, customChar);
   lcd.backlight();
   lcd.setCursor(5,1);
-  lcd.print("Bienvenido");
+  lcd.print("BIENVENIDO");
   delay(1500);
   lcd.clear();
-  pinMode(outputPin, OUTPUT);
+  lcd.setCursor(2,1);
+  lcd.print("PRECALENTANDO LA");
+  lcd.setCursor(8,1);
+  lcd.print("CAMA");
+  digitalWrite(RELE_PLANCHA, HIGH);
+  delay(15000);
+  digitalWrite(RELE_PLANCHA, LOW);
+  lcd.clear();
+  /*pinMode(outputPin, OUTPUT);
   pid.begin();
   pid.setpoint(setpoint);
   pid.tune(0.4, 0.6, 0.1);
-  pid.limit(0, 255);
+  pid.limit(0, 255);*/
 }
 
 void loop()
@@ -86,10 +94,10 @@ void loop()
     tiempo_actual=millis();
     temperatura = leer_termopar();
     mostrar_mensaje();
-    sensorValue = analogRead(sensorPin);
+    /*sensorValue = analogRead(sensorPin);
     output = pid.compute(sensorValue);
-    analogWrite(outputPin, output);
-    if (tiempo_actual-tiempo_inicio>10000)
+    analogWrite(outputPin, output);*/
+    if (tiempo_actual-tiempo_inicio>30000)
     {
       soldadora=ENFRIANDO;
       actualizar_tiempo = true;
@@ -97,14 +105,32 @@ void loop()
     delay(300);
     break;
     case ENFRIANDO:
-    establecer_tiempo();
-    tiempo_actual=millis();
+    //establecer_tiempo();
+    //tiempo_actual=millis();
     temperatura = leer_termopar();
-    if (tiempo_actual-tiempo_inicio<5000)
+    digitalWrite(RELE_PLANCHA, LOW);
+    if (temperatura>60)
+    {
+      mostrar_mensaje();
+    }
+    else
+    {
+      mostrar_mensaje_2();
+      digitalWrite(LED_PILOTO, HIGH);
+      establecer_tiempo();
+      tiempo_actual=millis();
+      if (tiempo_actual-tiempo_inicio>5000)
+      {
+        soldadora = ESPERA;
+        digitalWrite(LED_PILOTO, LOW);
+        borrar_pantalla=true;
+        actualizar_tiempo=true;
+      }
+    }
+    /*if (tiempo_actual-tiempo_inicio<5000)
     {
       digitalWrite(RELE_PLANCHA, LOW);
       mostrar_mensaje();
-      Serial.println("djkfd");
     }
     else if (tiempo_actual-tiempo_inicio<10000)
     {
@@ -117,7 +143,7 @@ void loop()
       digitalWrite(LED_PILOTO, LOW);
       borrar_pantalla=true;
       actualizar_tiempo=true;
-    }
+    }*/
     delay(300);
     break;
     case STOP:
